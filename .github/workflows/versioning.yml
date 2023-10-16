@@ -40,3 +40,9 @@ jobs:
         run: |
           # Use the version in your build process
           echo "Using version ${{ steps.set_version.outputs.version }}"
+
+      - name: Create artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: my-artifact
+          path: path/to/artifact-${{ steps.set_version.outputs.version }}.zip
