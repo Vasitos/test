@@ -17,5 +17,8 @@
             "branch": "*",
             "bump": "build"
         }
+    ],
+    "files": [
+        "./package-lock.json"
     ]
 }
