@@ -1,4 +1,4 @@
-name: Update Version
+name: Update version
 
 on:
   push:
@@ -10,53 +10,18 @@ on:
 jobs:
   update-version:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-
-    - name: Set up Git
-      run: |
-        git config user.email "github-actions@github.com"
-        git config user.name "GitHub Actions"
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Determine version and update
-      run: |
-        # Extract branch name
-        BRANCH_NAME=${GITHUB_REF#refs/heads/}
-
-        # Determine the type of version update
-        if [[ $BRANCH_NAME == 'release/'* ]]; then
-          # Increment major version
-          echo "Incrementing major version"
-          MAJOR_VERSION=$(echo ${{ secrets.VERSION }} | cut -d. -f1)
-          NEW_VERSION=$((MAJOR_VERSION + 1)).0.0
-        elif [[ $BRANCH_NAME == 'feat/'* ]]; then
-          # Increment feature version
-          echo "Incrementing feature version"
-          FEATURE_VERSION=$(echo ${{ secrets.VERSION }} | cut -d. -f2)
-          NEW_VERSION=$(echo ${{ secrets.VERSION }} | cut -d. -f1).$((FEATURE_VERSION + 1)).0
-        elif [[ $BRANCH_NAME == 'fix/'* ]]; then
-          # Increment patch version
-          echo "Incrementing patch version"
-          PATCH_VERSION=$(echo ${{ secrets.VERSION }} | cut -d. -f3)
-          NEW_VERSION=$(echo ${{ secrets.VERSION }} | cut -d. -f1).$(echo ${{ secrets.VERSION }} | cut -d. -f2).$((PATCH_VERSION + 1))
-        else
-          echo "No version update needed"
-          NEW_VERSION=${{ secrets.VERSION }}
-        fi
-
-        echo "NEW_VERSION=${NEW_VERSION}" >> $GITHUB_ENV
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Commit and push version update
-      run: |
-        git checkout -b version-update
-        sed -i "s/VERSION=${{ secrets.VERSION }}/VERSION=${NEW_VERSION}/g" your-version-file.sh
-        git commit -am "Update VERSION to $NEW_VERSION"
-        git push origin version-update
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Update version
+        run: |
+          if [[ ${{ github.ref }} == 'refs/heads/release/'* ]]; then
+            echo "::set-env name=VERSION::$(echo ${{ env.VERSION }} | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')"
+          elif [[ ${{ github.ref }} == 'refs/heads/feat/'* ]]; then
+            echo "::set-env name=VERSION::$(echo ${{ env.VERSION }} | awk -F. '{$(NF-1) = $(NF-1) + 1;} 1' | sed 's/ /./g')"
+          elif [[ ${{ github.ref }} == 'refs/heads/fix/'* ]]; then
+            echo "::set-env name=VERSION::$(echo ${{ env.VERSION }} | awk -F. '{$(NF-2) = $(NF-2) + 1;} 1' | sed 's/ /./g')"
+          fi
+      - name: Save version
+        run: |
+          echo "VERSION=${{ env.VERSION }}" >> $GITHUB_ENV
