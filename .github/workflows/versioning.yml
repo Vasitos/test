@@ -9,8 +9,8 @@ jobs:
   versioning:
     runs-on: ubuntu-latest
 
-    env:
-      VERSION: 1.0.0
+    outputs:
+      version: ${{ steps.version.outputs.VERSION }}
 
     steps:
     - name: Checkout code
@@ -39,17 +39,16 @@ jobs:
           echo "Other branches; no version bump"
           echo "::set-output name=VERSION::$VERSION"
         fi
-        echo "::set-output name=VERSION::$VERSION"
       env:
         VERSION: ${{ env.VERSION }}
 
     - name: Use Version
       run: |
         if [ "$branch_name" != "fix" ]; then
-          echo "Using Version ${{ steps.version.outputs.VERSION }}"
+          echo "Using Version ${{ steps.version.outputs.version }}"
           # You can use the VERSION variable in your build and deployment steps
         else
           echo "This is a fix branch; no version change."
         fi
       env:
-        VERSION: ${{ steps.version.outputs.VERSION }}
+        VERSION: ${{ steps.version.outputs.version }}
