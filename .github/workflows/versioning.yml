@@ -3,36 +3,40 @@ name: Semantic Versioning
 on:
   push:
     branches:
-      - 'release/*'
-      - 'feat/*'
-      - 'fix/*'
+      - release/*
+      - feat/*
+      - fix/*
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Get Last Branch and Semantic Version Containing String
-        uses: ianwalter/get-last-branch-and-semantic-version-containing-string@v1
-        with:
-          regex-string: '^[0-9]+\.[0-9]+\.[0-9]+-(release|feat|fix)\/.*$'
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-      - name: Git Semantic Version (via branches)
-        uses: iautom8things/semantic-version@v5
-        with:
-          tag_prefix: 'v'
-          increment: 'commits'
-          bump_each_commit: 'false'
-
-      - name: Semantic Version Bump per Branch and Tag
-        uses: mathieudutour/github-actions-semantic-version@v1
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          version: ${{ env.VERSION }}
-
-      - name: Set Version to 1.0.0 if no artifacts
+      - name: Get latest artifact version
+        id: get_version
         run: |
-          if [ -z "$VERSION" ]; then
-            echo "No artifacts found. Setting version to 1.0.0."
-            VERSION="1.0.0"
+          # Get the latest artifact version
+          version=$(ls -t artifacts/*.zip | head -n1 | sed 's/.*-\([0-9]\+\.[0-9]\+\.[0-9]\+\)\.zip/\1/')
+          if [ -z "$version" ]; then
+            # No artifact found, set version to 1.0.0
+            echo "::set-output name=version::1.0.0"
+          else
+            # Artifact found, set version to the latest version
+            echo "::set-output name=version::$version"
           fi
+
+      - name: Set version
+        id: set_version
+        uses: PaulHatch/semantic-version@v5.2.1
+        with:
+          version: ${{ steps.get_version.outputs.version }}
+          major: ${{ startsWith(github.ref, 'refs/heads/release/') }}
+          minor: ${{ startsWith(github.ref, 'refs/heads/feat/') }}
+          patch: ${{ startsWith(github.ref, 'refs/heads/fix/') }}
+
+      - name: Use version
+        run: |
+          # Use the version in your build process
+          echo "Using version ${{ steps.set_version.outputs.version }}"
