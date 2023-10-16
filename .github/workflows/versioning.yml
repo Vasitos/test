@@ -11,15 +11,8 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
-    - name: Git Semantic Version (via branches)
-      uses: dawidd6/action-git-semantic-version@v5
+    - name: Version Bumper
+      uses: michmich112/version-bumper@v1.0.1
       with:
-        bump_each_commit: true
-        tag_prefix: 'v'
-        tag_suffix: ''
-        major_words: 'major, breaking'
-        minor_words: 'minor'
-        patch_words: 'patch, bugfix, docs, style, refactor, perf, test, build, ci, rever'
-        branch_prefix: 'feat/,fix/'
-        branch_major_prefix: 'feat/'
-        branch_minor_prefix: 'fix/'
+        options-file: "./.github/workflows/options.json"
+        github-token: ${{ secrets.GITHUB_TOKEN }}

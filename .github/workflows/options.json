@@ -1,0 +1,21 @@
+{
+    "scheme": "semantic",
+    "versionFile": "package.json",
+    "rules": [
+        {
+            "trigger": "commit",
+            "branch": "feat/*",
+            "bump": "minor"
+        },
+        {
+            "trigger": "commit",
+            "branch": "fix/*",
+            "bump": "patch"
+        },
+        {
+            "trigger": "commit",
+            "branch": "*",
+            "bump": "build"
+        }
+    ]
+}
