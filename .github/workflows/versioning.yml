@@ -1,22 +1,46 @@
 name: Semantic Versioning
 
 on:
-  pull_request:
-    types: [closed]
+  push:
     branches:
       - main
 
 jobs:
-  versioning:
+  build:
     runs-on: ubuntu-latest
-    if: github.event.pull_request.merged == true
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-
-    - name: Increment Semantic Version
-      uses: christian-draeger/increment-semantic-version@1.1.0
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        branch: ${{ github.ref }}
-        prerelease: false
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Determine version
+        uses: PaulHatch/semantic-version@v5.2.1
+        id: semver
+        with:
+          version_format: "${major}.${minor}.${patch}"
+          bump:
+            feat: minor
+            fix: patch
+            docs: none
+            style: none
+            refactor: none
+            perf: none
+            test: none
+            build: none
+            ci: none
+            revert: none
+      - name: Set version in context
+        run: echo "VERSION=${{ steps.semver.outputs.version || '1.0.0' }}" >> $GITHUB_ENV
+        if: github.ref == 'refs/heads/main'
+      - name: Build and test
+        run: |
+          # Build and test your code here
+        if: github.ref == 'refs/heads/main'
+      - name: Create release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.semver.outputs.version }}
+          release_name: Release ${{ steps.semver.outputs.version }}
+          body: |
+            Release ${{ steps.semver.outputs.version }}
+        if: github.ref == 'refs/heads/main'
