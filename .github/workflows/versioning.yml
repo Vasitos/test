@@ -8,20 +8,42 @@ on:
       - 'fix/*'
 
 jobs:
-  update-version:
+  update_version:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+
+      - name: Get current version
+        run: |
+          VERSION=$(curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          "https://api.github.com/repos/${{ github.repository }}/actions/variables/VERSION" | jq -r '.value')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Update version
         run: |
-          if [[ ${{ github.ref }} == 'refs/heads/release/'* ]]; then
-            echo "::set-env name=VERSION::$(echo ${{ env.VERSION }} | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')"
-          elif [[ ${{ github.ref }} == 'refs/heads/feat/'* ]]; then
-            echo "::set-env name=VERSION::$(echo ${{ env.VERSION }} | awk -F. '{$(NF-1) = $(NF-1) + 1;} 1' | sed 's/ /./g')"
-          elif [[ ${{ github.ref }} == 'refs/heads/fix/'* ]]; then
-            echo "::set-env name=VERSION::$(echo ${{ env.VERSION }} | awk -F. '{$(NF-2) = $(NF-2) + 1;} 1' | sed 's/ /./g')"
+          BRANCH=${{ github.ref }}
+          MAJOR=1.0.0
+          MINOR=1.0.0
+          PATCH=1.0.0
+          if [[ $BRANCH == *"release"* ]]; then
+            MAJOR=$(echo $VERSION | awk -F. '{ print \$1+1 }').0.0
+          elif [[ $BRANCH == *"feat"* ]]; then
+            MINOR=$(echo $VERSION | awk -F. '{ print \$2+1 }').0
+          elif [[ $BRANCH == *"fix"* ]]; then
+            PATCH=$(echo $VERSION | awk -F. '{ print \$3+1 }')
           fi
-      - name: Save version
+          VERSION=$MAJOR.$MINOR.$PATCH
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Save updated version
         run: |
-          echo "VERSION=${{ env.VERSION }}" >> $GITHUB_ENV
+          curl -X PATCH -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          -d '{"value":"'$VERSION'"}' \
+          "https://api.github.com/repos/${{ github.repository }}/actions/variables/VERSION"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
