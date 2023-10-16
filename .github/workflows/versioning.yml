@@ -3,74 +3,23 @@ name: Semantic Versioning
 on:
   push:
     branches:
-      - '*'
+      - main
 
 jobs:
-  version:
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
-      issues: write
-      repository-projects: write
     steps:
-    - name: Checkout code
+    - name: Checkout
       uses: actions/checkout@v2
-
-    - name: Determine version increment
-      id: determine-version
-      run: |
-        branch_name=$(echo ${GITHUB_REF#refs/heads/})
-        increment=""
-        case $branch_name in
-          feat/*) increment="minor" ;;  # New feature
-          fix/*) increment="patch" ;;   # Bug fix
-          docs/*) increment="patch" ;;  # Documentation changes
-          style/*) increment="patch" ;; # Code style changes
-          refactor/*) increment="patch" ;; # Code refactor
-          perf/*) increment="patch" ;; # Performance improvement
-          test/*) increment="patch" ;;  # Test changes
-          build/*) increment="patch" ;; # Build changes
-          ci/*) increment="patch" ;;    # CI/CD changes
-          revert/*) increment="patch" ;; # Revert changes
-          *) increment="patch" ;;       # Default to patch for other branches
-        esac
-        echo "::set-output name=increment::$increment"
-      shell: bash
-
-    - name: Get current version
-      id: get-current-version
-      run: echo "::set-output name=current_version::$(cat VERSION)"
-
-    - name: Bump version
-      id: bump-version
-      run: |
-        current_version=$(echo ${{ steps.get-current-version.outputs.current_version }})
-        increment=$(echo ${{ steps.determine-version.outputs.increment }})
-        IFS='.' read -ra version_parts <<< "$current_version"
-        major=${version_parts[0]}
-        minor=${version_parts[1]}
-        patch=${version_parts[2]}
-
-        case $increment in
-          major) major=$((major + 1)) ;;
-          minor) minor=$((minor + 1)) ;;
-          patch) patch=$((patch + 1)) ;;
-        esac
-
-        new_version="$major.$minor.$patch"
-        echo "$new_version" > VERSION
-        echo "Bumped version to $new_version"
-        git config --global user.name "GitHub Actions"
-        git config --global user.email "actions@github.com"
-        git add VERSION
-        git commit -m "Bump version to $new_version"
-        git push
-      shell: bash
-
-    - name: Create a new tag
-      id: create-tag
-      run: |
-        new_version=$(cat VERSION)
-        git tag -a "v$new_version" -m "Version $new_version"
-        git push --tags
-      shell: bash
+    - name: Git Semantic Version (via branches)
+      uses: dawidd6/action-git-semantic-version@v5
+      with:
+        bump_each_commit: true
+        tag_prefix: 'v'
+        tag_suffix: ''
+        major_words: 'major, breaking'
+        minor_words: 'minor'
+        patch_words: 'patch, bugfix, docs, style, refactor, perf, test, build, ci, rever'
+        branch_prefix: 'feat/,fix/'
+        branch_major_prefix: 'feat/'
+        branch_minor_prefix: 'fix/'
