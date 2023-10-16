@@ -1,41 +1,58 @@
-name: Set Version
+name: Semantic Versioning
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - release/*
+      - feat/*
+      - fix/*
 
 jobs:
-  set-version:
+  semantic-versioning:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Set version
-        id: set_version
+      - name: Check for artifacts
         run: |
-          if [[ "${{ github.ref }}" == "refs/heads/release/*" ]]; then
-            echo "VERSION=major" >> $GITHUB_ENV
-          elif [[ "${{ github.ref }}" == "refs/heads/feat/*" ]]; then
-            echo "VERSION=feat" >> $GITHUB_ENV
-          elif [[ "${{ github.ref }}" == "refs/heads/fix/*" ]]; then
-            echo "VERSION=patch" >> $GITHUB_ENV
+          if [ -z "$(ls -A ${{ github.workspace }}/artifacts)" ]; then
+            echo "No artifacts found"
+            echo "::set-env name=VERSION::1.0.0"
           else
-            echo "VERSION=1.0.0" >> $GITHUB_ENV
+            echo "Artifacts found"
+            echo "::set-env name=VERSION::$(cat ${{ github.workspace }}/artifacts/latest-version.txt)"
           fi
-        shell: bash
       - name: Download artifact
-        id: download_artifact
+        if: ${{ env.VERSION != '1.0.0' }}
         uses: actions/download-artifact@v2
         with:
-          name: artifact-name
-          path: ./artifact
-      - name: Set version from artifact
-        id: set_version_from_artifact
-        run: |
-          exit_status=$?
-          if [ $exit_status -eq 0 ]; then
-            # Get the latest version from the artifact
-            VERSION=$(ls -l ./artifact | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | sort -V | tail -n 1)
-          else
-            VERSION=${{ steps.set_version.outputs.VERSION }}
-          fi
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-        shell: bash
+          name: latest-artifact
+          path: ${{ github.workspace }}/artifacts
+      - name: Get version from artifact
+        if: ${{ env.VERSION != '1.0.0' }}
+        uses: battila7/get-version-action@v2.2.1
+        with:
+          filename: ${{ github.workspace }}/artifacts/latest-version.txt
+      - name: Check version number
+        if: ${{ env.VERSION != '1.0.0' }}
+        uses: technote-space/package-version-check-action@v1.5.2
+        with:
+          version: ${{ env.VERSION }}
+      - name: Check if version has been updated
+        if: ${{ env.VERSION != '1.0.0' }}
+        uses: EndBug/version-check@v2
+        with:
+          current-version: ${{ env.VERSION }}
+      - name: Check if tag already exists
+        if: ${{ env.VERSION != '1.0.0' }}
+        uses: thebongy/version-check@v1
+        with:
+          version: ${{ env.VERSION }}
+      - name: Create release
+        if: ${{ env.VERSION != '1.0.0' }}
+        uses: actions/create-release@v1
+        with:
+          tag_name: ${{ env.VERSION }}
+          release_name: Release ${{ env.VERSION }}
+          body: |
+            This is a new release with version ${{ env.VERSION }}.
+          draft: false
+          prerelease: false
