@@ -1,18 +1,22 @@
 name: Semantic Versioning
 
 on:
-  push:
+  pull_request:
+    types: [closed]
     branches:
       - main
 
 jobs:
-  build:
+  versioning:
     runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
     steps:
-    - name: Checkout
+    - name: Checkout code
       uses: actions/checkout@v2
-    - name: Version Bumper
-      uses: michmich112/version-bumper@v1.0.1
+
+    - name: Increment Semantic Version
+      uses: christian-draeger/increment-semantic-version@1.1.0
       with:
-        options-file: "./.github/workflows/options.json"
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        branch: ${{ github.ref }}
+        prerelease: false
