@@ -30,7 +30,8 @@ jobs:
       - name: Set version from artifact
         id: set_version_from_artifact
         run: |
-          if [ -d "./artifact" ]; then
+          exit_status=$?
+          if [ $exit_status -eq 0 ]; then
             # Get the latest version from the artifact
             VERSION=$(ls -l ./artifact | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | sort -V | tail -n 1)
           else
