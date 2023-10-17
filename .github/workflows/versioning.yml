@@ -42,15 +42,10 @@ jobs:
         continue-on-error: true
 
       - name: Create Release
-        uses: actions/github-script@v5
+        uses: actions/create-release-action@v3
         with:
-          script: |
-            github.repos.createRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag_name: ${{ steps.set-version.outputs.new_version }},
-              name: "Release ${{ steps.set-version.outputs.new_version }}",
-              body: "Release notes for ${{ steps.set-version.outputs.new_version }}",
-              draft: false,
-              prerelease: false
-            })
+          tag: ${{ steps.set-version.outputs.new_version }}
+          name: "Release ${{ steps.set-version.outputs.new_version }}"
+          body: "Release notes for ${{ steps.set-version.outputs.new_version }}."
+          draft: false
+          prerelease: false
