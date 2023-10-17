@@ -1,20 +1,17 @@
-name: Validate Commit Message
-
+name: Your workflow
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, reopened, synchronize, edited]
+    branches:
+      - main
 
 jobs:
-  validate_commit_message:
+  build:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-    - name: Validate commit message
-      id: validate
-      run: |
-        commit_message=${{ github.event.commits[0].message }}
-        if [[ $commit_message != *"feat"* && $commit_message != *"fix"* && $commit_message != *"release"* ]]; then
-          echo "error: commit message does not contain 'feat', 'fix' or 'release'"
-          exit 1
-        fi
+      - uses: actions/checkout@v2
+      - name: Validate Title
+        uses: FidelusAleksander/gh-action-regex@v0.3.0
+        with:
+          regex_pattern: "^(feat|fix|release|docs|style|refactor|build|ci|perf)\\(.*\\)"
+          text: ${{ github.event.pull_request.title }}
