@@ -13,15 +13,12 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
+    - name: Fetch tags
+      run: git fetch --tags
+
     - name: Get latest tag
       id: get_tag
-      run: |
-        latest_tag=$(git tag --sort=-committerdate | head -n 1)
-        if [ -z "$latest_tag" ]; then
-          echo "::set-output name=VERSION::1.0.0"
-        else
-          echo "::set-output name=VERSION::$latest_tag"
-        fi
+      run: echo "::set-output name=VERSION::$(git describe --tags --abbrev=0 2>>/dev/null || echo '1.0.0')" > >/dev/null
 
     - name: Set version
       run: echo "VERSION=${{ steps.get_tag.outputs.VERSION }}" >> $GITHUB_ENV
