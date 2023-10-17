@@ -3,46 +3,57 @@ name: Semantic Versioning
 on:
   push:
     branches:
-      - release/*
-      - feat/*
-      - fix/*
+      - 'release/*'
+      - 'feat/*'
+      - 'fix/*'
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Get latest artifact version
-        id: get_version
+      - name: Get latest release version
+        uses: actions/github-script@v4
+        with:
+          script: |
+            const { data: releases } = await github.repos.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 1,
+            });
+            const latestRelease = releases[0];
+            if (latestRelease) {
+              console.log(`Latest release version: ${latestRelease.tag_name}`);
+              return latestRelease.tag_name;
+            } else {
+              console.log('No releases found, setting version to 1.0.0');
+              return '1.0.0';
+            }
+          outputs:
+            version: ${{ steps.get_version.outputs.version }}
+
+      - name: Determine version type
+        id: determine_version_type
         run: |
-          # Get the latest artifact version
-          version=$(ls -t artifacts/*.zip | head -n1 | sed 's/.*-\([0-9]\+\.[0-9]\+\.[0-9]\+\)\.zip/\1/')
-          if [ -z "$version" ]; then
-            # No artifact found, set version to 1.0.0
-            echo "::set-output name=version::1.0.0"
-          else
-            # Artifact found, set version to the latest version
-            echo "::set-output name=version::$version"
+          branch_name=$(echo "${GITHUB_REF#refs/heads/}")
+          if [[ "$branch_name" == "release/"* ]]; then
+            echo "major";
+          elif [[ "$branch_name" == "feat/"* ]]; then
+            echo "feat";
+          elif [[ "$branch_name" == "fix/"* ]]; then
+            echo "patch";
           fi
+        shell: bash
 
-      - name: Set version
-        id: set_version
-        uses: PaulHatch/semantic-version@v5.2.1
+      - name: Create new release
+        uses: actions/create-release@v1
         with:
-          version: ${{ steps.get_version.outputs.version }}
-          major: ${{ startsWith(github.ref, 'refs/heads/release/') }}
-          minor: ${{ startsWith(github.ref, 'refs/heads/feat/') }}
-          patch: ${{ startsWith(github.ref, 'refs/heads/fix/') }}
-
-      - name: Use version
-        run: |
-          # Use the version in your build process
-          echo "Using version ${{ steps.set_version.outputs.version }}"
-
-      - name: Create artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: my-artifact
-          path: path/to/artifact-${{ steps.set_version.outputs.version }}.zip
+          tag_name: ${{ steps.determine_version_type.outputs.version }}-${{ github.sha }}
+          release_name: Release ${{ steps.determine_version_type.outputs.version }}-${{ github.sha }}
+          body: |
+            Release ${{ steps.determine_version_type.outputs.version }}-${{ github.sha }}
+          draft: false
+          prerelease: false
