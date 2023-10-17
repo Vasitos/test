@@ -1,35 +1,14 @@
 name: Bump version
-
 on:
   push:
     branches:
-      - 'release/*'
-      - 'feat/*'
-      - 'fix/*'
-      - 'main'
+      - master
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@master
       - name: Bump version and push tag
-        uses: hennejg/github-tag-action@v4.3.1
+        uses: hennejg/github-tag-action@v4.1.jh1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ github.ref }}
-          if: "contains(github.ref, 'release/')"
-          release: "major"
-      - name: Bump version and push tag
-        uses: hennejg/github-tag-action@v4.3.1
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ github.ref }}
-          if: "contains(github.ref, 'feat/')"
-          release: "minor"
-      - name: Bump version and push tag
-        uses: hennejg/github-tag-action@v4.3.1
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ github.ref }}
-          if: "contains(github.ref, 'fix/')"
-          release: "patch"
