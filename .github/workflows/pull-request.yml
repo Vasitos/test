@@ -13,7 +13,7 @@ jobs:
     - name: Validate commit message
       id: validate
       run: |
-        commit_message=$(git log -1 --pretty=format:"%s")
+        commit_message=${{ github.event.commits[0].message }}
         if [[ $commit_message != *"feat"* && $commit_message != *"fix"* && $commit_message != *"release"* ]]; then
           echo "error: commit message does not contain 'feat', 'fix' or 'release'"
           exit 1
