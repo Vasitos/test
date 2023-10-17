@@ -24,7 +24,11 @@ jobs:
       run: echo "VERSION=${{ steps.get_tag.outputs.VERSION }}" >> $GITHUB_ENV
     
     - name: Display Selected Tag
-      run: echo "The selected tag is ${{ steps.get_tag.outputs.VERSION }}"
+      env:
+        RELEASE_VERSION: ${{ steps.vars.outputs.tag }}
+      run: |
+        echo $RELEASE_VERSION
+        echo ${{ steps.vars.outputs.tag }}
 
     - name: Increment version
       run: |
