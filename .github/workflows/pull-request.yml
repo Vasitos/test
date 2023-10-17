@@ -14,14 +14,16 @@ jobs:
     - name: Get last commit message
       id: get_commit
       run: |
+        current_commit=$(git rev-parse HEAD)
+        echo "Current commit of the current branch: $current_commit"
         echo "::set-output name=message::$(git log -1 --pretty=%B)"
-    - name: Show last commit message
-      run: |
-        last_commit_message=$(git log -1 --pretty=%B)
-        echo "Last commit message:"
-        echo "$last_commit_message"
       shell: bash
-
+    - name: Get current commit of the current branch
+      run: |
+        current_commit=$(git rev-parse HEAD)
+        echo "Current commit of the current branch: $current_commit"
+      shell: bash
+ 
     - name: Check commit message
       id: check_commit
       uses: haya14busa/action-cond@v1
