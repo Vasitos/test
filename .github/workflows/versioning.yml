@@ -1,14 +1,36 @@
-name: Bump version
+name: Bump version and create release
 on:
   push:
     branches:
       - main
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@master
-      - name: Bump version and push tag
-        uses: hennejg/github-tag-action@v4.3.1
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: '0'
+    - name: Bump version and push tag
+      uses: anothrNick/github-tag-action@1.64.0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        WITH_V: false
+        MAJOR_STRING_TOKEN: "release("
+        MINOR_STRING_TOKEN: "feat("
+        PATCH_STRING_TOKEN: "fix("
+        DEFAULT_BUMP: minor
+    - name: Create GitHub release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.bump_version.outputs.new_tag }}
+        release_name: Release ${{ steps.bump_version.outputs.new_tag }}
+        body: |
+          Changes in this Release
+          - ${{ github.event.commits }}
+        draft: false
+        prerelease: false
