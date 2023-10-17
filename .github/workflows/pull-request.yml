@@ -1,25 +1,19 @@
-name: Verify Commit Message
+name: Verificar mensaje del último commit
 
 on:
   pull_request:
-    types: [opened, synchronize]
+    types: [opened, synchronize, reopened]
 
 jobs:
-  verify-commit-message:
+  build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v2
-      - name: Conditional value for GitHub Action
-        uses: haya14busa/action-cond@v1.0.0
+
+      - name: Verificar mensaje del último commit
+        uses: technote-space/conditional-value-for-github-action@v1.0.0
         with:
-          cond: ${{ contains(github.event.head_commit.message, 'feat(') || contains(github.event.head_commit.message, 'fix(') || contains(github.event.head_commit.message, 'release(') }}
-          if_true: "true"
-          if_false: "false"
-        id: check-commit-message
-      - name: Block merge if commit message is invalid
-        uses: haya14busa/action-cond@v1.0.0
-        with:
-          cond: ${{ steps.check-commit-message.outputs.value == 'false' }}
-          if_true: "Invalid commit message. Please include 'feat(', 'fix(', or 'release(' in your commit message."
-          if_false: ""
+          value: '^(feat|fix|release)\('
+          error-message: 'El mensaje del último commit no cumple con los requisitos.'
