@@ -25,10 +25,9 @@ jobs:
     
     - name: Display Selected Tag
       env:
-        RELEASE_VERSION: ${{ steps.vars.outputs.tag }}
+        RELEASE_VERSION: ${{ steps.get_tag.outputs.VERSION }}
       run: |
         echo $RELEASE_VERSION
-        echo ${{ steps.vars.outputs.tag }}
 
     - name: Increment version
       run: |
