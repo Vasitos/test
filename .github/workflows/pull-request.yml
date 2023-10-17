@@ -13,5 +13,5 @@ jobs:
       - name: Validate Title
         uses: FidelusAleksander/gh-action-regex@v0.3.0
         with:
-          regex_pattern: "^(feat|fix|release|docs|style|refactor|build|ci|perf)\\(.*\\)"
+          regex_pattern: "^(feat|fix|docs|style|refactor|perf|test|build|ci)\\(\\w+\\):\\s.+"
           text: ${{ github.event.pull_request.title }}
