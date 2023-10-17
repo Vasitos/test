@@ -1,39 +1,35 @@
-name: Versionado semántico
+name: Bump version
+
 on:
   push:
     branches:
-      - main
       - 'release/*'
       - 'feat/*'
       - 'fix/*'
+      - 'main'
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0 # Necessary for getting tags
-      - name: Get latest tag
-        id: get_tag
-        run: |
-          TAGS=$(curl --silent "https://api.github.com/repos/${{ github.repository }}/tags" | jq -r '.[].name' | sort -V | tail -n 1)
-          echo "::set-output name=tag::$TAGS"
-      - name: Determine release type
-        id: determine_release_type
-        run: |
-          BRANCH=$(echo $GITHUB_REF | cut -d/ -f3)
-          if [[ $BRANCH == release/* ]]; then
-            RELEASE_TYPE=major
-          elif [[ $BRANCH == feat/* ]]; then
-            RELEASE_TYPE=minor
-          elif [[ $BRANCH == fix/* ]]; then
-            RELEASE_TYPE=patch
-          fi
-          echo "::set-output name=release_type::$RELEASE_TYPE"
+      - uses: actions/checkout@v2
       - name: Bump version and push tag
         uses: hennejg/github-tag-action@v4.3.1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          default_bump: ${{ steps.determine_release_type.outputs.release_type }}
-          release_branches: ${{ steps.get_tag.outputs.tag }}
+          tag: ${{ github.ref }}
+          if: "contains(github.ref, 'release/')"
+          release: "major"
+      - name: Bump version and push tag
+        uses: hennejg/github-tag-action@v4.3.1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref }}
+          if: "contains(github.ref, 'feat/')"
+          release: "minor"
+      - name: Bump version and push tag
+        uses: hennejg/github-tag-action@v4.3.1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref }}
+          if: "contains(github.ref, 'fix/')"
+          release: "patch"
