@@ -12,8 +12,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check if a tag exists
-        id: check_tag
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Determine latest tag
+        id: get_latest_tag
         run: |
           latest_tag=$(git describe --tags --abbrev=0)
           if [ -z "$latest_tag" ]; then
@@ -30,17 +33,17 @@ jobs:
           branch_name=${GITHUB_REF#refs/heads/}
           if [[ $branch_name == release/* ]]; then
             echo "This is a release branch. Bumping major version."
-            current_version=${{ steps.check_tag.outputs.version }}
+            current_version=${{ steps.get_latest_tag.outputs.version }}
             major_version="${current_version%%.*}.$((${current_version##*.}+1)).0"
             echo "::set-output name=version::$major_version"
           elif [[ $branch_name == feat/* ]]; then
             echo "This is a feat branch. Bumping minor version."
-            current_version=${{ steps.check_tag.outputs.version }}
+            current_version=${{ steps.get_latest_tag.outputs.version }}
             minor_version="${current_version%.*}.$((${current_version##*.}+1))"
             echo "::set-output name=version::$minor_version"
           elif [[ $branch_name == fix/* ]]; then
             echo "This is a fix branch. Bumping patch version."
-            current_version=${{ steps.check_tag.outputs.version }}
+            current_version=${{ steps.get_latest_tag.outputs.version }}
             patch_version="${current_version%.*}.$((${current_version##*.}+1))"
             echo "::set-output name=version::$patch_version"
           else
@@ -48,9 +51,8 @@ jobs:
           fi
 
       - name: Set Git tag and push
-        if: steps.determine_version.outputs.version != ${{ steps.check_tag.outputs.version }}
+        if: steps.determine_version.outputs.version != ${{ steps.get_latest_tag.outputs.version }}
         run: |
           version=${{ steps.determine_version.outputs.version }}
           git tag -a $version -m "Version $version"
           git push origin --tags
-
