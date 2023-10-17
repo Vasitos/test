@@ -11,24 +11,17 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Validate Title
-        id: validation
         uses: FidelusAleksander/gh-action-regex@v0.3.0
         with:
           regex_pattern: "^(feat|fix|docs|style|refactor|perf|test|build|ci)\\(\\w+\\):\\s.+"
           text: ${{ github.event.pull_request.title }}
-          
-      - name: Comment on PR if validation fails
-        if: steps.validation.outcome == 'failure'
-        run: |
-          echo "Title validation failed. Please make sure your pull request title follows the format: 'category(scope): description'" > pr_comment.txt
-          gh pr comment ${{ github.event.pull_request.number }} --body "$(cat pr_comment.txt)"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
-      - name: Comment on PR if validation passes
-        if: steps.validation.outcome == 'success'
-        run: |
-          echo "Title validation passed." > pr_comment.txt
-          gh pr comment ${{ github.event.pull_request.number }} --body "$(cat pr_comment.txt)"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Return message on pull request if validation fails
+        uses: actions/github-script@v4
+        with:
+          script: |
+            if (steps.Validate_Title.conclusion === 'failure') {
+              const pr = context.payload.pull_request;
+              await github.pulls.createComment(pr.number, {
+                body: `**Pull request title does not match the required format.**
+                
