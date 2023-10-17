@@ -41,18 +41,18 @@ jobs:
         echo "::set-output name=new_version::$new_version"
       continue-on-error: true
 
-    - name: Create GitHub Release
-      if: success()
-      run: |
-        new_version="${{ steps.set-version.outputs.new_version }}"
-        echo "Creating a GitHub release for version: $new_version"
-        
-        # Create a release with the new version
-        gh release create $new_version -t $new_version
-        
-        # You can also add release notes and upload assets if needed
-        # Example: gh release create $new_version -t $new_version --notes "Release notes here"
-        # Example: gh release upload $new_version /path/to/asset
-        
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Create GitHub release
+      uses: actions/github-script@v4
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const { data } = await github.repos.createRelease({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            tag_name: '${{ steps.set-version.outputs.new_version }}',
+            name: 'Release ${{ steps.set-version.outputs.new_version }}',
+            body: 'Release notes go here',
+            draft: false,
+            prerelease: false
+          });
+          console.log(`Created release ${data.html_url}`);
