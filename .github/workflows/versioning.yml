@@ -26,11 +26,14 @@ jobs:
         branch_name=$(echo ${GITHUB_REF#refs/heads/})
         current_version="${{ steps.check-release.outputs.version }}"
         if [[ $branch_name == "release/"* ]]; then
-          new_version="v$(( ${current_version#v} + 1 )).0.0"
+          major=$(echo $current_version | cut -d. -f1)
+          new_version="v$((major + 1)).0.0"
         elif [[ $branch_name == "feat/"* ]]; then
-          new_version="v${current_version#v.}.$(( ${current_version#v.} + 1 ))"
+          minor=$(echo $current_version | cut -d. -f2)
+          new_version="v$(echo $current_version | cut -d. -f1).$((minor + 1)).0"
         elif [[ $branch_name == "fix/"* ]]; then
-          new_version="v${current_version#v}.0.$(( ${current_version#v.0.} + 1 ))"
+          patch=$(echo $current_version | cut -d. -f3)
+          new_version="v$(echo $current_version | cut -d. -f1).$(echo $current_version | cut -d. -f2).$((patch + 1))"
         else
           echo "Invalid branch name: $branch_name"
           exit 1
