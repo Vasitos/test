@@ -15,10 +15,14 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
 
+      - name: List tags for debugging
+        run: git tag
+
       - name: Determine latest tag
         id: get_latest_tag
         run: |
           latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          echo "Latest tag: $latest_tag"
           if [ -z "$latest_tag" ]; then
             echo "No tags found. Setting version to 1.0.0."
             echo "::set-output name=version::1.0.0"
