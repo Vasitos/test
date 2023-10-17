@@ -16,10 +16,12 @@ jobs:
     - name: Check if release exists
       id: check-release
       run: |
-        version=$(git describe --tags --abbrev=0 2>/dev/null || echo "1.0.0")
+        version=$(git tag -l 'v*' | sort -rV | head -1)
+        if [ -z "$version" ]; then
+          version="1.0.0"
+        fi
         echo "::set-output name=version::$version"
-      continue-on-error: true
-
+  
     - name: Set version
       id: set-version
       run: |
