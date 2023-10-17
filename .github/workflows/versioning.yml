@@ -1,62 +1,15 @@
 name: Semantic Versioning
-
 on:
   push:
     branches:
-      - 'release/*'
-      - 'feat/*'
-      - 'fix/*'
-
+      - '*'
 jobs:
-  determine_version:
+  build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
-
-      - name: List tags for debugging
-        run: git tag
-
-      - name: Determine latest tag
-        id: get_latest_tag
-        run: |
-          latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          echo "Latest tag: $latest_tag"
-          if [ -z "$latest_tag" ]; then
-            echo "No tags found. Setting version to 1.0.0."
-            echo "::set-output name=version::1.0.0"
-          else
-            echo "Latest tag found: $latest_tag"
-            echo "::set-output name=version::$latest_tag"
-          fi
-
-      - name: Determine version based on branch
-        id: determine_version
-        run: |
-          branch_name=${GITHUB_REF#refs/heads/}
-          if [[ $branch_name == release/* ]]; then
-            echo "This is a release branch. Bumping major version."
-            current_version=${{ steps.get_latest_tag.outputs.version }}
-            major_version="${current_version%%.*}.$((${current_version##*.}+1)).0"
-            echo "::set-output name=version::$major_version"
-          elif [[ $branch_name == feat/* ]]; then
-            echo "This is a feat branch. Bumping minor version."
-            current_version=${{ steps.get_latest_tag.outputs.version }}
-            minor_version="${current_version%.*}.$((${current_version##*.}+1))"
-            echo "::set-output name=version::$minor_version"
-          elif [[ $branch_name == fix/* ]]; then
-            echo "This is a fix branch. Bumping patch version."
-            current_version=${{ steps.get_latest_tag.outputs.version }}
-            patch_version="${current_version%.*}.$((${current_version##*.}+1))"
-            echo "::set-output name=version::$patch_version"
-          else
-            echo "Unsupported branch type. Not bumping version."
-          fi
-
-      - name: Set Git tag and push
-        if: steps.determine_version.outputs.version != ${{ steps.get_latest_tag.outputs.version }}
-        run: |
-          version=${{ steps.determine_version.outputs.version }}
-          git tag -a $version -m "Version $version"
-          git push origin --tags
+      - name: Git Semantic Version (via branches)
+        uses: iautom8things/semantic-version@v5
+        with:
+          major_pattern: "^release/"
+          minor_pattern: "^feat/"
+          patch_pattern: "^fix/"
