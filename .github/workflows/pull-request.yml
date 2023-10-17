@@ -1,0 +1,27 @@
+name: Your workflow
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, edited]
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Validate Title
+        uses: FidelusAleksander/gh-action-regex@v0.3.0
+        with:
+          regex_pattern: "^(feat|fix|docs|style|refactor|perf|test|build|ci)\\(\\w+\\):\\s.+"
+          text: ${{ github.event.pull_request.title }}
+
+      - name: Return message on pull request if validation fails
+        uses: actions/github-script@v4
+        with:
+          script: |
+            if (steps.Validate_Title.conclusion === 'failure') {
+              const pr = context.payload.pull_request;
+              await github.pulls.createComment(pr.number, {
+                body: `**Pull request title does not match the required format.**
+                
