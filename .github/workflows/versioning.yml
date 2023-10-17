@@ -1,51 +1,15 @@
-name: Semantic Versioning
-
 on:
   push:
-    branches:
-      - '**'
-
+    tags:
+      - 'v*.*.*'
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-
-    - name: Fetch tags
-      run: git fetch --tags
-
-    - name: Get latest tag
-      id: get_tag
-      run: echo "::set-output name=VERSION::$(git describe --tags --abbrev=0 2>/dev/null || echo '1.0.0')" >/dev/null
-
-    - name: Set version
-      run: echo "VERSION=${{ steps.get_tag.outputs.VERSION }}" >> $GITHUB_ENV
-    
-    - name: Display Selected Tag
-      env:
-        RELEASE_VERSION: ${{ steps.get_tag.outputs.VERSION }}
-      run: |
-        echo $RELEASE_VERSION
-
-    - name: Increment version
-      run: |
-        BRANCH_NAME=${GITHUB_REF#refs/heads/}
-        MAJOR=$(echo $VERSION | cut -d '.' -f 1)
-        MINOR=$(echo $VERSION | cut -d '.' -f 2)
-        PATCH=$(echo $VERSION | cut -d '.' -f 3)
-    
-        if [[ $BRANCH_NAME == release/* ]]; then
-          MAJOR=$((MAJOR + 1))
-          MINOR=0
-          PATCH=0
-        elif [[ $BRANCH_NAME == feat/* ]]; then
-          MINOR=$((MINOR + 1))
-          PATCH=0
-        elif [[ $BRANCH_NAME == fix/* ]]; then
-          PATCH=$((PATCH + 1))
-        fi
-    
-        NEW_VERSION="$MAJOR.$MINOR.$PATCH"
-        echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+      - uses: actions/checkout@v2
+      - name: Set env
+        run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+      - name: Test
+        run: |
+          echo $RELEASE_VERSION
+          echo ${{ env.RELEASE_VERSION }}
