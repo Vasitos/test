@@ -6,47 +6,84 @@ on:
       - 'release/*'
       - 'feat/*'
       - 'fix/*'
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - 'release/*'
+      - 'feat/*'
+      - 'fix/*'
 
 jobs:
-  update-version:
+  set_version:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Check if release exists
-      id: check-release
-      run: |
-        version=$(git tag -l 'v*' | sort -rV | head -1)
-        if [ -z "$version" ]; then
-          version="1.0.0"
-        fi
-        echo "::set-output name=version::$version"
-  
-    - name: Set version
-      id: set-version
-      run: |
-        branch_name=$(echo ${GITHUB_REF#refs/heads/})
-        current_version="${{ steps.check-release.outputs.version }}"
-        if [[ $branch_name == "release/"* ]]; then
-          major=$(echo $current_version | cut -d. -f1)
-          new_version="v$((major + 1)).0.0"
-        elif [[ $branch_name == "feat/"* ]]; then
-          minor=$(echo $current_version | cut -d. -f2)
-          new_version="v$(echo $current_version | cut -d. -f1).$((minor + 1)).0"
-        elif [[ $branch_name == "fix/"* ]]; then
-          patch=$(echo $current_version | cut -d. -f3)
-          new_version="v$(echo $current_version | cut -d. -f1).$(echo $current_version | cut -d. -f2).$((patch + 1))"
-        else
-          echo "Invalid branch name: $branch_name"
-          exit 1
-        fi
-        echo "::set-output name=new_version::$new_version"
-      continue-on-error: true
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-    - name: Create and push new tag
-      if: success()
+    - name: Get the latest tag
+      id: latest_tag
       run: |
-        new_version="${{ steps.set-version.outputs.new_version }}"
-        echo "Creating new tag: $new_version"
-        git tag $new_version
-        git push origin $new_version
+        latest_tag=$(git describe --abbrev=0 --tags 2>/dev/null || echo "v1.0.0")
+        echo "Latest tag: $latest_tag"
+        echo "::set-output name=latest_tag::$latest_tag"
+      shell: bash
+
+    - name: Determine version type
+      id: version_type
+      run: |
+        branch_name="${GITHUB_REF##*/}"
+        case "$branch_name" in
+          release/*)
+            version_type="major"
+            ;;
+          feat/*)
+            version_type="feat"
+            ;;
+          fix/*)
+            version_type="patch"
+            ;;
+          *)
+            version_type="unknown"
+            ;;
+        esac
+        echo "Version type: $version_type"
+        echo "::set-output name=version_type::$version_type"
+      shell: bash
+
+    - name: Set the version
+      id: set_version
+      run: |
+        latest_tag="${{ steps.latest_tag.outputs.latest_tag }}"
+        version_type="${{ steps.version_type.outputs.version_type }}"
+        if [ "$version_type" == "major" ]; then
+          IFS='.' read -ra version_parts <<< "$latest_tag"
+          major_version="${version_parts[0]}"
+          major_version=$((major_version + 1))
+          new_version="$major_version.0.0"
+        elif [ "$version_type" == "feat" ]; then
+          IFS='.' read -ra version_parts <<< "$latest_tag"
+          minor_version="${version_parts[1]}"
+          minor_version=$((minor_version + 1))
+          new_version="${version_parts[0]}.$minor_version.0"
+        elif [ "$version_type" == "patch" ]; then
+          IFS='.' read -ra version_parts <<< "$latest_tag"
+          patch_version="${version_parts[2]}"
+          patch_version=$((patch_version + 1))
+          new_version="${version_parts[0]}.${version_parts[1]}.$patch_version"
+        else
+          new_version="1.0.0"
+        fi
+        echo "New version: $new_version"
+        echo "::set-output name=new_version::$new_version"
+      shell: bash
+
+    - name: Update version file
+      run: echo "${{ steps.set_version.outputs.new_version }}" > version.txt
+
+    - name: Commit and push version change
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add version.txt
+        git commit -m "Update version to ${{ steps.set_version.outputs.new_version }}"
+        git push
